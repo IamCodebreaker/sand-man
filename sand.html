@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sandman Dust</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #000;
+    }
+
+    canvas {
+      display: block;
+      touch-action: none;
+    }
+
+    #toggleHint {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 14px;
+      font-family: monospace;
+      opacity: 0.4;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div id="toggleHint">Touch or move cursor — Press "A" to toggle attract/repel</div>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const particleCount = 1000;
+    const mouse = { x: null, y: null };
+    let attractMode = false;
+
+    const brightColors = [
+      "rgba(255, 215, 0, 0.9)",
+      "rgba(255, 223, 80, 0.8)",
+      "rgba(255, 240, 150, 0.7)",
+      "rgba(255, 250, 200, 0.6)"
+    ];
+
+    function setMouse(x, y) {
+      mouse.x = x;
+      mouse.y = y;
+    }
+
+    window.addEventListener("touchmove", (e) => {
+      const touch = e.touches[0];
+      if (touch) setMouse(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    window.addEventListener("mousemove", (e) => {
+      setMouse(e.clientX, e.clientY);
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() === "a") {
+        attractMode = !attractMode;
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.2;
+        this.vy = (Math.random() - 0.5) * 0.2;
+        this.size = Math.random() * 0.6 + 0.4;
+        this.baseColor = brightColors[Math.floor(Math.random() * brightColors.length)];
+        this.glow = 0;
+      }
+
+      update() {
+        this.vx *= 0.998;
+        this.vy *= 0.998;
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+
+        if (mouse.x !== null && mouse.y !== null) {
+          const dx = mouse.x - this.x;
+          const dy = mouse.y - this.y;
+          const distSq = dx * dx + dy * dy;
+          const dist = Math.sqrt(distSq);
+
+          const radius = 250;
+          if (dist < radius) {
+            const strength = (1 - dist / radius);
+            const angle = Math.atan2(dy, dx);
+            const direction = attractMode ? -1 : 1;
+            const force = strength * 0.3 * direction;
+
+            this.vx += Math.cos(angle) * force;
+            this.vy += Math.sin(angle) * force;
+
+            this.glow = Math.max(0, 1 - dist / radius);
+          } else {
+            this.glow *= 0.96;
+          }
+        }
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+
+        if (this.glow > 0.95) {
+          ctx.fillStyle = "rgba(255, 255, 255, 1)";
+          ctx.shadowColor = "white";
+        } else {
+          ctx.fillStyle = this.baseColor;
+          ctx.shadowColor = this.baseColor;
+        }
+
+        ctx.shadowBlur = 6 * this.glow + 4;
+        ctx.fill();
+      }
+    }
+
+    function initParticles() {
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animate() {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let p of particles) {
+        p.update();
+        p.draw();
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    initParticles();
+    animate();
+  </script>
+</body>
+</html>
