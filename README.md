@@ -24,4 +24,18 @@ A mesmerizing particle animation that simulates glowing dust swirling in respons
 ---
 
 ## 📁 Project Structure
+sand-man/
+├── index.html # Main animation file
+├── README.md # You're here!
+
+
+---
+
+## 🧪 How to Run Locally
+
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/your-username/sand-man.git
+   cd sand-man
+
 
